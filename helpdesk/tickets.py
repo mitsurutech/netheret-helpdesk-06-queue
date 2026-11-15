@@ -1,9 +1,10 @@
-"""Support requests (tickets): raising a new one."""
+"""Support requests (tickets): raising them, the queue and the detail page."""
 from flask import Blueprint, abort, g, redirect, render_template, request, url_for
+from sqlalchemy import case
 
 from .auth import login_required, role_required
 from .extensions import db
-from .models import CATEGORIES, PRIORITIES, Company, Ticket
+from .models import CATEGORIES, PRIORITIES, STAFF_ROLES, STATUSES, TIERS, Company, Ticket, User
 
 bp = Blueprint("tickets", __name__)
 
@@ -78,3 +79,55 @@ def raised(ticket_id):
     if g.user.role == "customer" and ticket.company_id != g.user.company_id:
         abort(404)
     return render_template("tickets/raised.html", ticket=ticket)
+
+
+@bp.route("/queue")
+@role_required(*STAFF_ROLES)
+def queue():
+    """The list of requests, with filters chosen from the form at the top.
+
+    The filters are in the address (a GET form), so a filtered queue can be
+    bookmarked or shared.
+    """
+    status = request.args.get("status", "active")
+    priority = request.args.get("priority", "")
+    tier = request.args.get("tier", "")
+    assigned = request.args.get("assigned", "")
+
+    query = db.select(Ticket)
+    # Each filter adds one more WHERE condition to the query.
+    if status == "active":
+        query = query.where(Ticket.status.in_(["new", "open", "waiting"]))
+    elif status in STATUSES:
+        query = query.where(Ticket.status == status)
+    if priority in PRIORITIES:
+        query = query.where(Ticket.priority == priority)
+    if tier.isdigit() and int(tier) in TIERS:
+        query = query.where(Ticket.tier == int(tier))
+    if assigned == "me":
+        query = query.where(Ticket.assigned_to_id == g.user.id)
+    elif assigned == "none":
+        query = query.where(Ticket.assigned_to_id.is_(None))
+    elif assigned.isdigit():
+        query = query.where(Ticket.assigned_to_id == int(assigned))
+
+    # Most urgent first: CASE turns each priority into a number to sort by.
+    urgency = case({"critical": 0, "high": 1, "medium": 2, "low": 3}, value=Ticket.priority)
+    query = query.order_by(urgency, Ticket.created_at)
+    tickets = db.session.scalars(query).all()
+
+    staff = db.session.scalars(
+        db.select(User).where(User.role.in_(STAFF_ROLES)).order_by(User.name)
+    ).all()
+    return render_template(
+        "tickets/queue.html", tickets=tickets, staff=staff,
+        statuses=STATUSES, priorities=PRIORITIES, tiers=TIERS,
+        chosen={"status": status, "priority": priority, "tier": tier, "assigned": assigned},
+    )
+
+
+@bp.route("/requests/<int:ticket_id>")
+@role_required(*STAFF_ROLES)
+def detail(ticket_id):
+    ticket = db.get_or_404(Ticket, ticket_id)
+    return render_template("tickets/detail.html", ticket=ticket)

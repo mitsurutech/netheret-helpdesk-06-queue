@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Request queue{% endblock %}
+{% block content %}
+  <h1>Request queue</h1>
+
+  {# A GET form: the choices go into the address, like /queue?priority=high #}
+  <form class="filters" method="get" action="{{ url_for('tickets.queue') }}">
+    <div class="field">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        <option value="active"{% if chosen.status == "active" %} selected{% endif %}>Still to do (new, open, waiting)</option>
+        <option value="all"{% if chosen.status == "all" %} selected{% endif %}>Any status</option>
+        {% for status in statuses %}
+        <option value="{{ status }}"{% if chosen.status == status %} selected{% endif %}>{{ status|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="priority">Priority</label>
+      <select id="priority" name="priority">
+        <option value="">Any priority</option>
+        {% for priority in priorities %}
+        <option value="{{ priority }}"{% if chosen.priority == priority %} selected{% endif %}>{{ priority|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="tier">Tier</label>
+      <select id="tier" name="tier">
+        <option value="">Any tier</option>
+        {% for tier in tiers %}
+        <option value="{{ tier }}"{% if chosen.tier == tier|string %} selected{% endif %}>Tier {{ tier }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="assigned">Assigned to</label>
+      <select id="assigned" name="assigned">
+        <option value="">Anybody or nobody</option>
+        <option value="me"{% if chosen.assigned == "me" %} selected{% endif %}>Me</option>
+        <option value="none"{% if chosen.assigned == "none" %} selected{% endif %}>Nobody yet</option>
+        {% for person in staff %}
+        <option value="{{ person.id }}"{% if chosen.assigned == person.id|string %} selected{% endif %}>{{ person.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-buttons">
+      <button type="submit">Filter</button>
+      <a href="{{ url_for('tickets.queue') }}">Clear filters</a>
+    </div>
+  </form>
+
+  <div class="table-scroll">
+  <table>
+    <caption>{{ tickets|length }} request{{ "" if tickets|length == 1 else "s" }}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Reference</th>
+        <th scope="col">Title</th>
+        <th scope="col">Company</th>
+        <th scope="col">Priority</th>
+        <th scope="col">Status</th>
+        <th scope="col">Tier</th>
+        <th scope="col">Assigned to</th>
+        <th scope="col">Raised</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ticket in tickets %}
+      <tr>
+        <td><a href="{{ url_for('tickets.detail', ticket_id=ticket.id) }}">{{ ticket.reference }}</a></td>
+        <td>{{ ticket.title }}</td>
+        <td>{{ ticket.company.name }}</td>
+        <td><span class="badge priority-{{ ticket.priority }}">{{ ticket.priority|capitalize }}</span></td>
+        <td><span class="badge status-{{ ticket.status }}">{{ ticket.status|capitalize }}</span></td>
+        <td>{{ ticket.tier }}</td>
+        <td>{{ ticket.assigned_to.name if ticket.assigned_to else "Nobody yet" }}</td>
+        <td>{{ ticket.created_at|datetime }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8">No requests match these filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+{% endblock %}

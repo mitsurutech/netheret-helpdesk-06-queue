@@ -31,6 +31,9 @@ def create_app():
 
     db.init_app(app)
 
+    from . import filters
+    filters.register(app)
+
     # Each part of the app is a blueprint: a group of pages in its own file.
     from . import auth, main, tickets
     app.register_blueprint(auth.bp)

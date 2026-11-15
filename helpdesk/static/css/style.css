@@ -148,3 +148,25 @@ th { background: var(--panel); }
 .panel-success { background: var(--good); color: #fff; padding: 0.5rem 1.5rem; border-radius: 6px; margin-top: 1.5rem; }
 .panel-success h1 { margin-top: 0.5rem; }
 .reference { font-size: 1.4rem; letter-spacing: 0.05em; }
+
+/* Queue filters sit side by side on wide screens. */
+.filters { display: flex; flex-wrap: wrap; gap: 0 1rem; align-items: flex-end; background: var(--panel); padding: 1rem 1rem 0; border-radius: 6px; }
+.filters .field { flex: 1 1 11rem; }
+.filter-buttons { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+
+/* Badges always show the word too, so colour is never the only clue. */
+.badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 1rem; font-size: 0.85rem; font-weight: bold; border: 1px solid currentColor; white-space: nowrap; }
+.priority-critical { background: var(--bad); color: #fff; }
+.priority-high { color: var(--bad); }
+.priority-medium { color: var(--warn); }
+.priority-low { color: var(--muted); }
+.status-new { color: var(--link); }
+.status-open { color: var(--brand); }
+.status-waiting { color: var(--warn); }
+.status-resolved, .status-closed { color: var(--good); }
+
+.keep-lines { white-space: pre-line; }
+
+/* Wide tables scroll sideways on small screens instead of breaking the page. */
+.table-scroll { overflow-x: auto; }
+.quick-links li { margin-bottom: 0.5rem; }
